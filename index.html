@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meine Handelsplattform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .modal {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-content {
+            animation: slide-in 0.3s ease-out;
+        }
+        @keyframes slide-in {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        /* Custom styles for image gallery */
+        .gallery-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            border-radius: 0.5rem;
+        }
+        .gallery-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        .gallery-image.active {
+            display: block;
+        }
+        .gallery-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 0.5rem;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        .gallery-nav-btn:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        .gallery-nav-btn.left { left: 1rem; }
+        .gallery-nav-btn.right { right: 1rem; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Hauptcontainer -->
+    <div class="container mx-auto p-4 flex-1">
+
+        <!-- Header mit Geldbeutel-Anzeige und "Angebot erstellen" Button -->
+        <header class="bg-white shadow-md rounded-lg p-4 mb-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+            <h1 class="text-3xl font-bold text-gray-800">Handelsplattform</h1>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-full">
+                    <span class="text-sm text-gray-600">Guthaben:</span>
+                    <span id="wallet-balance" class="text-lg font-bold text-green-600">--</span>
+                    <span class="text-lg font-bold text-gray-600">€</span>
+                </div>
+                <button id="create-listing-btn" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-full shadow-lg hover:bg-indigo-700 transition duration-300">
+                    Angebot erstellen
+                </button>
+            </div>
+        </header>
+
+        <!-- Hauptinhalt: Produktliste -->
+        <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="listings-grid">
+            <!-- Dynamisch generierte Angebote -->
+        </main>
+        
+        <!-- Lade-Indikator -->
+        <div id="loading-spinner" class="mt-8 flex justify-center items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-blue-500 border-gray-200"></div>
+        </div>
+
+    </div>
+
+    <!-- Modales Fenster für neues Angebot -->
+    <div id="create-listing-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-4 modal-content">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Neues Angebot erstellen</h2>
+            <form id="listing-form" class="space-y-4">
+                <div>
+                    <label for="listing-title" class="block text-sm font-medium text-gray-700">Titel</label>
+                    <input type="text" id="listing-title" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                </div>
+                <div>
+                    <label for="listing-description" class="block text-sm font-medium text-gray-700">Beschreibung</label>
+                    <textarea id="listing-description" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"></textarea>
+                </div>
+                <div>
+                    <label for="listing-price" class="block text-sm font-medium text-gray-700">Preis (€)</label>
+                    <input type="number" id="listing-price" step="0.01" min="0.01" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                </div>
+                <div>
+                    <label for="listing-quantity" class="block text-sm font-medium text-gray-700">Menge</label>
+                    <input type="number" id="listing-quantity" min="1" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                </div>
+                <div>
+                    <label for="listing-images" class="block text-sm font-medium text-gray-700">Bild-URL(s) (optional, durch Komma getrennt)</label>
+                    <input type="text" id="listing-images" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                    <p class="mt-1 text-xs text-gray-500">Sie können auch mehrere URLs mit einem Komma trennen, z. B. 'url1, url2'</p>
+                </div>
+                <div class="flex justify-end space-x-2 mt-4">
+                    <button type="button" id="close-create-modal-btn" class="px-4 py-2 bg-gray-200 rounded-md font-medium text-gray-700 hover:bg-gray-300 transition duration-300">Abbrechen</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 rounded-md font-medium text-white hover:bg-green-700 transition duration-300">Erstellen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modales Fenster für Angebotsdetails -->
+    <div id="listing-details-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4 modal-content">
+            <div id="details-content" class="space-y-4">
+                <!-- Dynamisch generierte Details -->
+            </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" id="close-details-modal-btn" class="px-4 py-2 bg-gray-200 rounded-md font-medium text-gray-700 hover:bg-gray-300 transition duration-300">Schließen</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fußzeile -->
+    <footer class="text-center text-gray-500 text-sm py-4">
+        Erstellt mit Firebase und Tailwind CSS. Ihre ID: <span id="user-id" class="font-mono text-gray-700"></span>
+    </footer>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, addDoc, getDocs, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        setLogLevel('Debug');
+
+        // Globale Variablen für Firebase (werden vom Canvas-Backend bereitgestellt)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth, userId = null;
+        let isAuthReady = false;
+
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const listingsGrid = document.getElementById('listings-grid');
+        const walletBalanceEl = document.getElementById('wallet-balance');
+        const userIdEl = document.getElementById('user-id');
+        const createListingModal = document.getElementById('create-listing-modal');
+        const listingDetailsModal = document.getElementById('listing-details-modal');
+        const createListingBtn = document.getElementById('create-listing-btn');
+        const closeCreateModalBtn = document.getElementById('close-create-modal-btn');
+        const closeDetailsModalBtn = document.getElementById('close-details-modal-btn');
+        const listingForm = document.getElementById('listing-form');
+        
+        let currentImageIndex = 0;
+        let currentImages = [];
+
+        // Funktion zum Initialisieren der App
+        async function initApp() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Authentifizierung
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Authentifizierungsstatus-Änderungen überwachen
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdEl.textContent = userId;
+                        isAuthReady = true;
+
+                        // Initialisierung des Benutzer-Geldbeutels
+                        const userWalletRef = doc(db, `/artifacts/${appId}/public/data/wallets/${userId}`);
+                        const userWalletSnap = await getDoc(userWalletRef);
+                        if (!userWalletSnap.exists()) {
+                            await setDoc(userWalletRef, { balance: 50.00 }); // Startguthaben
+                        }
+
+                        // Firestore-Listener für den Geldbeutel
+                        onSnapshot(userWalletRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                const balance = docSnap.data().balance.toFixed(2);
+                                walletBalanceEl.textContent = balance;
+                            }
+                        });
+
+                        // Firestore-Listener für die Produktliste
+                        const listingsRef = collection(db, `/artifacts/${appId}/public/data/listings`);
+                        onSnapshot(listingsRef, (querySnapshot) => {
+                            const listings = [];
+                            querySnapshot.forEach((doc) => {
+                                listings.push({ id: doc.id, ...doc.data() });
+                            });
+                            renderListings(listings);
+                        });
+
+                        loadingSpinner.classList.add('hidden');
+                    } else {
+                        // Bei Abmeldung (oder initialer Zustand ohne Token)
+                        isAuthReady = true;
+                        loadingSpinner.classList.add('hidden');
+                    }
+                });
+
+            } catch (error) {
+                console.error("Fehler bei der Firebase-Initialisierung:", error);
+                loadingSpinner.textContent = "Fehler beim Laden der App.";
+            }
+        }
+
+        // Funktion zum Rendern der Angebote
+        function renderListings(listings) {
+            listingsGrid.innerHTML = '';
+            if (listings.length === 0) {
+                listingsGrid.innerHTML = '<p class="text-center text-gray-500 col-span-full">Es sind derzeit keine Angebote verfügbar.</p>';
+                return;
+            }
+
+            listings.forEach(listing => {
+                const isSeller = listing.sellerId === userId;
+                const images = listing.images && listing.images.length > 0 ? listing.images : ['https://placehold.co/400x300/e5e7eb/6b7280?text=Kein+Bild'];
+                
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden relative group';
+                card.innerHTML = `
+                    <div class="relative w-full h-48 overflow-hidden">
+                        <img src="${images[0]}" alt="${listing.title}" onerror="this.src='https://placehold.co/400x300/e5e7eb/6b7280?text=Bild+Fehler';" class="object-cover w-full h-full">
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-1 truncate">${listing.title}</h3>
+                        <p class="text-sm text-gray-500 mb-2 truncate">${listing.description}</p>
+                        <div class="flex justify-between items-center mt-3">
+                            <span class="text-2xl font-bold text-indigo-600">${listing.price.toFixed(2)} €</span>
+                            <span class="text-sm text-gray-500">Menge: ${listing.quantity}</span>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0">
+                        <button class="view-details-btn bg-indigo-500 text-white font-medium py-2 px-4 rounded-full w-full hover:bg-indigo-600 transition duration-300 text-sm" data-id="${listing.id}">
+                            Details ansehen
+                        </button>
+                        ${isSeller ? `
+                        <button class="delete-listing-btn mt-2 bg-red-500 text-white font-medium py-2 px-4 rounded-full w-full hover:bg-red-600 transition duration-300 text-sm" data-id="${listing.id}">
+                            Löschen
+                        </button>
+                        ` : ''}
+                    </div>
+                `;
+                listingsGrid.appendChild(card);
+            });
+            
+            // Event-Listener für Details- und Löschen-Buttons
+            document.querySelectorAll('.view-details-btn').forEach(button => {
+                button.addEventListener('click', (e) => showDetailsModal(e.target.dataset.id));
+            });
+            document.querySelectorAll('.delete-listing-btn').forEach(button => {
+                button.addEventListener('click', (e) => deleteListing(e.target.dataset.id));
+            });
+        }
+
+        // Modales Fenster für Details anzeigen
+        async function showDetailsModal(id) {
+            const docRef = doc(db, `/artifacts/${appId}/public/data/listings/${id}`);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const listing = { id: docSnap.id, ...docSnap.data() };
+                const detailsContent = document.getElementById('details-content');
+                currentImages = listing.images && listing.images.length > 0 ? listing.images : ['https://placehold.co/600x400/e5e7eb/6b7280?text=Kein+Bild'];
+                currentImageIndex = 0;
+                
+                const showNavButtons = currentImages.length > 1;
+
+                detailsContent.innerHTML = `
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">${listing.title}</h2>
+                    <p class="text-gray-600 text-lg mb-4">${listing.description}</p>
+                    <div class="gallery-container mb-4">
+                        <img src="${currentImages[0]}" alt="${listing.title}" onerror="this.src='https://placehold.co/600x400/e5e7eb/6b7280?text=Bild+Fehler';" class="gallery-image active w-full h-full object-cover">
+                        ${showNavButtons ? `
+                            <button id="prev-image-btn" class="gallery-nav-btn left">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <button id="next-image-btn" class="gallery-nav-btn right">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-3xl font-bold text-indigo-600">${listing.price.toFixed(2)} €</span>
+                        <span class="text-lg text-gray-500">Menge: ${listing.quantity}</span>
+                    </div>
+                    <button id="buy-item-btn" data-id="${listing.id}" class="bg-green-600 text-white font-bold py-3 px-8 rounded-full w-full hover:bg-green-700 transition duration-300">
+                        Kaufen
+                    </button>
+                `;
+                
+                // Event-Listener für Kaufen- und Bild-Navigations-Buttons
+                document.getElementById('buy-item-btn').addEventListener('click', (e) => buyItem(e.target.dataset.id));
+                
+                if(showNavButtons) {
+                    document.getElementById('prev-image-btn').addEventListener('click', () => changeImage(-1));
+                    document.getElementById('next-image-btn').addEventListener('click', () => changeImage(1));
+                }
+                
+                listingDetailsModal.classList.remove('hidden');
+            } else {
+                console.error("Dokument nicht gefunden!");
+            }
+        }
+        
+        // Funktion zum Wechseln des Bildes in der Galerie
+        function changeImage(direction) {
+            currentImageIndex += direction;
+            if (currentImageIndex >= currentImages.length) {
+                currentImageIndex = 0;
+            } else if (currentImageIndex < 0) {
+                currentImageIndex = currentImages.length - 1;
+            }
+            document.querySelector('.gallery-image').src = currentImages[currentImageIndex];
+        }
+
+        // Funktion zum Löschen eines Angebots
+        async function deleteListing(id) {
+            if (!isAuthReady) {
+                console.warn("Warten auf Authentifizierung...");
+                return;
+            }
+            try {
+                const listingRef = doc(db, `/artifacts/${appId}/public/data/listings/${id}`);
+                const listingSnap = await getDoc(listingRef);
+
+                if (listingSnap.exists() && listingSnap.data().sellerId === userId) {
+                    await deleteDoc(listingRef);
+                    console.log("Angebot erfolgreich gelöscht.");
+                } else {
+                    console.error("Sie sind nicht der Verkäufer dieses Artikels oder der Artikel existiert nicht.");
+                }
+            } catch (e) {
+                console.error("Fehler beim Löschen des Angebots: ", e);
+            }
+        }
+
+        // Funktion zum Kaufen eines Artikels (mit Transaktion für Sicherheit)
+        async function buyItem(itemId) {
+            if (!isAuthReady) {
+                console.warn("Warten auf Authentifizierung...");
+                return;
+            }
+
+            const itemRef = doc(db, `/artifacts/${appId}/public/data/listings/${itemId}`);
+            const buyerWalletRef = doc(db, `/artifacts/${appId}/public/data/wallets/${userId}`);
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const itemDoc = await transaction.get(itemRef);
+                    const buyerWalletDoc = await transaction.get(buyerWalletRef);
+
+                    if (!itemDoc.exists()) {
+                        throw "Artikel existiert nicht!";
+                    }
+
+                    const item = itemDoc.data();
+                    const buyerBalance = buyerWalletDoc.data().balance;
+                    
+                    if (buyerBalance < item.price) {
+                        throw "Nicht genügend Guthaben!";
+                    }
+                    if (item.quantity <= 0) {
+                        throw "Artikel ist ausverkauft!";
+                    }
+
+                    const newBuyerBalance = buyerBalance - item.price;
+                    const newQuantity = item.quantity - 1;
+                    const sellerWalletRef = doc(db, `/artifacts/${appId}/public/data/wallets/${item.sellerId}`);
+
+                    // Update des Käufer-Guthabens
+                    transaction.update(buyerWalletRef, { balance: newBuyerBalance });
+
+                    // Update des Verkäufer-Guthabens
+                    const sellerWalletDoc = await transaction.get(sellerWalletRef);
+                    const newSellerBalance = sellerWalletDoc.data().balance + item.price;
+                    transaction.update(sellerWalletRef, { balance: newSellerBalance });
+
+                    // Update der Artikelmenge oder Löschung
+                    if (newQuantity > 0) {
+                        transaction.update(itemRef, { quantity: newQuantity });
+                    } else {
+                        transaction.delete(itemRef);
+                        listingDetailsModal.classList.add('hidden'); // Modales Fenster bei Ausverkauf schließen
+                    }
+                });
+
+                // Erfolgsnachricht
+                console.log("Kauf erfolgreich abgeschlossen!");
+            } catch (e) {
+                console.error("Kauf fehlgeschlagen: ", e);
+            }
+        }
+
+        // Event-Listener für Modale Fenster
+        createListingBtn.addEventListener('click', () => createListingModal.classList.remove('hidden'));
+        closeCreateModalBtn.addEventListener('click', () => createListingModal.classList.add('hidden'));
+        closeDetailsModalBtn.addEventListener('click', () => listingDetailsModal.classList.add('hidden'));
+
+        // Event-Listener für das Formular
+        listingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isAuthReady) return;
+
+            const title = document.getElementById('listing-title').value;
+            const description = document.getElementById('listing-description').value;
+            const price = parseFloat(document.getElementById('listing-price').value);
+            const quantity = parseInt(document.getElementById('listing-quantity').value, 10);
+            const imagesInput = document.getElementById('listing-images').value;
+            const images = imagesInput.split(',').map(url => url.trim()).filter(url => url);
+
+            if (isNaN(price) || isNaN(quantity) || price <= 0 || quantity <= 0) {
+                console.error("Ungültige Preis- oder Mengenangabe.");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, `/artifacts/${appId}/public/data/listings`), {
+                    title,
+                    description,
+                    price,
+                    quantity,
+                    images,
+                    sellerId: userId,
+                    timestamp: new Date()
+                });
+                
+                listingForm.reset();
+                createListingModal.classList.add('hidden');
+                console.log("Angebot erfolgreich erstellt!");
+
+            } catch (e) {
+                console.error("Fehler beim Hinzufügen des Dokuments: ", e);
+            }
+        });
+
+        // App-Initialisierung bei Laden der Seite
+        window.onload = initApp;
+
+    </script>
+</body>
+</html>

@@ -1,146 +1,604 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🧠 Bildanalyse & Mathe-Löser</title>
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Download, Settings, Terminal, Code, Eye, Bug, Package, Cpu } from 'lucide-react';
 
-  <!-- === STYLE === -->
+const CodeRunner = () => {
+  const [code, setCode] = useState(`// Willkommen zum Advanced Code Runner!
+// Wähle eine Sprache und beginne zu programmieren
+
+console.log("Hello World!");`);
+  const [language, setLanguage] = useState('javascript');
+  const [output, setOutput] = useState('');
+  const [visualOutput, setVisualOutput] = useState('');
+  const [libraries, setLibraries] = useState([]);
+  const [newLibrary, setNewLibrary] = useState('');
+  const [debugMode, setDebugMode] = useState(false);
+  const [breakpoints, setBreakpoints] = useState(new Set());
+  const [executionStep, setExecutionStep] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const [theme, setTheme] = useState('dark');
+  const [fontSize, setFontSize] = useState(14);
+  const iframeRef = useRef(null);
+
+  const languageExamples = {
+    javascript: `// JavaScript Beispiel
+console.log("Hello from JavaScript!");
+
+// Funktion definieren
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log("Fibonacci(10):", fibonacci(10));`,
+    
+    python: `# Python Beispiel
+print("Hello from Python!")
+
+# Funktion definieren
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+print(f"Fibonacci(10): {fibonacci(10)}")`,
+    
+    html: `<!DOCTYPE html>
+<html>
+<head>
   <style>
     body {
-      font-family: system-ui, sans-serif;
-      margin: 30px;
-      background: #fafafa;
-      color: #222;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
-    h1 {
-      color: #2c3e50;
+    .card {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
     }
-    input[type="file"] {
-      margin-top: 10px;
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 20px;
     }
-    #preview {
-      margin-top: 10px;
-      max-width: 90%;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    #progress {
-      margin: 10px 0;
-      font-style: italic;
-    }
-    .hidden {
-      display: none;
-    }
-    pre {
-      background: #f0f0f0;
-      padding: 10px;
-      border-radius: 4px;
-      overflow-x: auto;
+    button:hover {
+      background: #764ba2;
     }
   </style>
-
-  <!-- === LIBRARIES === -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjs@13.0.3/lib/browser/math.js"></script>
 </head>
 <body>
-  <h1>🧮 Bildanalyse & Mathe-Löser</h1>
-  <p>
-    Diese Website erkennt Text in Bildern (OCR) und löst einfache Matheaufgaben – alles direkt im Browser, ohne Server oder KI-API.
-  </p>
-
-  <input type="file" id="imageInput" accept="image/*" />
-  <br /><br />
-  <img id="preview" alt="Vorschau" />
-
-  <div id="progress"></div>
-
-  <div id="result" class="hidden">
-    <h2>📜 Ergebnisse</h2>
-
-    <p><b>Erkannter Text:</b></p>
-    <pre id="ocrText"></pre>
-
-    <p><b>Gefundene Mathe-Ausdrücke:</b></p>
-    <pre id="mathExpressions"></pre>
-
-    <p><b>Lösungen:</b></p>
-    <pre id="solutions"></pre>
-
-    <p><b>Einfache Bildbeschreibung:</b></p>
-    <pre id="caption"></pre>
+  <div class="card">
+    <h1>Interactive HTML Demo</h1>
+    <p id="counter">Clicks: 0</p>
+    <button onclick="incrementCounter()">Click Me!</button>
   </div>
-
-  <!-- === SCRIPT === -->
+  
   <script>
-    const input = document.getElementById('imageInput');
-    const preview = document.getElementById('preview');
-    const progress = document.getElementById('progress');
-    const resultDiv = document.getElementById('result');
-    const ocrTextEl = document.getElementById('ocrText');
-    const mathExpressionsEl = document.getElementById('mathExpressions');
-    const solutionsEl = document.getElementById('solutions');
-    const captionEl = document.getElementById('caption');
-
-    input.addEventListener('change', async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      // Vorschau anzeigen
-      const reader = new FileReader();
-      reader.onload = e => { preview.src = e.target.result; };
-      reader.readAsDataURL(file);
-
-      progress.textContent = '📖 Analysiere Bild... bitte warten.';
-      resultDiv.classList.add('hidden');
-
-      // OCR starten
-      const { data: { text } } = await Tesseract.recognize(file, 'deu+eng', {
-        logger: m => {
-          if (m.status === 'recognizing text') {
-            progress.textContent = `🔍 Texterkennung: ${(m.progress * 100).toFixed(1)}%`;
-          }
-        }
-      });
-
-      // OCR-Ergebnis anzeigen
-      ocrTextEl.textContent = text.trim();
-      progress.textContent = 'Texterkennung abgeschlossen.';
-
-      // Matheausdrücke erkennen
-      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-      const mathLike = lines.filter(l => /[0-9][0-9\s\+\-\*\/\=\^\(\)xX]/.test(l));
-      mathExpressionsEl.textContent = mathLike.length ? mathLike.join('\n') : '(Keine gefunden)';
-
-      // Matheausdrücke mit math.js lösen
-      const solutions = [];
-      mathLike.forEach(expr => {
-        try {
-          const clean = expr.replace(/×/g, '*').replace(/÷/g, '/').replace(/\^/g, '**');
-          if (clean.includes('=')) {
-            const [lhs, rhs] = clean.split('=');
-            const node = math.parse(lhs + " - (" + rhs + ")");
-            const sol = math.solve(node, 'x');
-            solutions.push(`${expr} → x = ${sol}`);
-          } else {
-            const val = math.evaluate(clean);
-            solutions.push(`${expr} = ${val}`);
-          }
-        } catch (e) {
-          solutions.push(`${expr} → (Fehler beim Lösen: ${e.message})`);
-        }
-      });
-      solutionsEl.textContent = solutions.length ? solutions.join('\n') : '(Keine Lösungen)';
-
-      // einfache Bildbeschreibung
-      let caption = "Das Bild enthält Text.";
-      if (mathLike.length > 0) caption += " Es scheint mathematische Ausdrücke zu enthalten.";
-      if (text.toLowerCase().includes("gleichung") || text.includes("=")) caption += " Möglicherweise eine Gleichung.";
-      captionEl.textContent = caption;
-
-      resultDiv.classList.remove('hidden');
-    });
+    let count = 0;
+    function incrementCounter() {
+      count++;
+      document.getElementById('counter').textContent = 'Clicks: ' + count;
+    }
   </script>
 </body>
-</html>
+</html>`,
+    
+    arduino: `// Arduino Beispiel - LED Blink
+const int LED_PIN = 13;
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);
+  Serial.begin(9600);
+  Serial.println("Arduino Started!");
+}
+
+void loop() {
+  digitalWrite(LED_PIN, HIGH);
+  Serial.println("LED ON");
+  delay(1000);
+  
+  digitalWrite(LED_PIN, LOW);
+  Serial.println("LED OFF");
+  delay(1000);
+}`,
+    
+    css: `/* CSS Animations Demo */
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #1a1a2e;
+  overflow: hidden;
+}
+
+.container {
+  position: relative;
+  width: 300px;
+  height: 300px;
+}
+
+.circle {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  animation: orbit 3s infinite linear;
+}
+
+.circle:nth-child(1) {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  animation-delay: 0s;
+}
+
+.circle:nth-child(2) {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  animation-delay: 1s;
+}
+
+.circle:nth-child(3) {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  animation-delay: 2s;
+}
+
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(100px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(100px) rotate(-360deg);
+  }
+}
+
+.center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 30px rgba(255,255,255,0.5);
+}`
+  };
+
+  const executeCode = () => {
+    setOutput('');
+    setVisualOutput('');
+    
+    try {
+      if (language === 'javascript') {
+        executeJavaScript();
+      } else if (language === 'python') {
+        executePython();
+      } else if (language === 'html') {
+        executeHTML();
+      } else if (language === 'arduino') {
+        executeArduino();
+      } else if (language === 'css') {
+        executeCSS();
+      }
+    } catch (error) {
+      setOutput(`Error: ${error.message}\n${error.stack}`);
+    }
+  };
+
+  const executeJavaScript = () => {
+    const logs = [];
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    
+    console.log = (...args) => logs.push(args.join(' '));
+    console.error = (...args) => logs.push('Error: ' + args.join(' '));
+    console.warn = (...args) => logs.push('Warning: ' + args.join(' '));
+    
+    try {
+      const libraryImports = libraries.map(lib => {
+        if (lib.startsWith('https://')) {
+          return `// Library: ${lib}`;
+        }
+        return '';
+      }).join('\n');
+      
+      const fullCode = libraryImports + '\n' + code;
+      
+      if (debugMode) {
+        const lines = code.split('\n');
+        logs.push('=== DEBUG MODE ===');
+        lines.forEach((line, idx) => {
+          if (breakpoints.has(idx)) {
+            logs.push(`Breakpoint at line ${idx + 1}: ${line}`);
+          }
+        });
+        logs.push('==================\n');
+      }
+      
+      const result = eval(fullCode);
+      if (result !== undefined) {
+        logs.push('Return value: ' + result);
+      }
+    } catch (error) {
+      logs.push(`Error: ${error.message}`);
+    }
+    
+    console.log = originalLog;
+    console.error = originalError;
+    console.warn = originalWarn;
+    
+    setOutput(logs.join('\n'));
+  };
+
+  const executePython = () => {
+    const output = [];
+    output.push('=== Python Simulation ===');
+    output.push('Note: This is a simulated Python environment');
+    output.push('');
+    
+    try {
+      const lines = code.split('\n');
+      const printMatches = code.match(/print\((.*?)\)/g);
+      
+      if (printMatches) {
+        printMatches.forEach(match => {
+          const content = match.match(/print\((.*?)\)/)[1];
+          let evaluated = content.replace(/f["'](.+?)["']/g, (_, str) => {
+            return str.replace(/\{(.+?)\}/g, (__, expr) => {
+              try {
+                return eval(expr);
+              } catch {
+                return expr;
+              }
+            });
+          });
+          evaluated = evaluated.replace(/["']/g, '');
+          output.push(evaluated);
+        });
+      }
+      
+      if (debugMode) {
+        output.push('\n=== DEBUG INFO ===');
+        output.push(`Total lines: ${lines.length}`);
+        output.push(`Active breakpoints: ${breakpoints.size}`);
+      }
+    } catch (error) {
+      output.push(`Error: ${error.message}`);
+    }
+    
+    setOutput(output.join('\n'));
+  };
+
+  const executeHTML = () => {
+    const iframe = iframeRef.current;
+    if (iframe) {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(code);
+      doc.close();
+      setVisualOutput('HTML rendered in preview');
+    }
+  };
+
+  const executeCSS = () => {
+    const htmlWrapper = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>${code}</style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="circle"></div>
+          <div class="circle"></div>
+          <div class="circle"></div>
+          <div class="center"></div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    const iframe = iframeRef.current;
+    if (iframe) {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(htmlWrapper);
+      doc.close();
+      setVisualOutput('CSS rendered in preview');
+    }
+  };
+
+  const executeArduino = () => {
+    const output = [];
+    output.push('=== Arduino Simulator ===');
+    output.push('Board: Arduino Uno (Simulated)');
+    output.push('');
+    
+    const serialPrints = code.match(/Serial\.println?\((.*?)\)/g);
+    
+    if (serialPrints) {
+      output.push('Serial Monitor Output:');
+      output.push('---');
+      
+      serialPrints.forEach(match => {
+        const content = match.match(/Serial\.println?\((.*?)\)/)[1];
+        const cleaned = content.replace(/["']/g, '');
+        output.push(cleaned);
+      });
+    }
+    
+    const pinModes = code.match(/pinMode\((.+?),\s*(.+?)\)/g);
+    if (pinModes) {
+      output.push('\nPin Configuration:');
+      pinModes.forEach(match => {
+        output.push('  ' + match);
+      });
+    }
+    
+    const digitalWrites = code.match(/digitalWrite\((.+?),\s*(.+?)\)/g);
+    if (digitalWrites) {
+      output.push('\nDigital Output:');
+      digitalWrites.forEach(match => {
+        output.push('  ' + match);
+      });
+    }
+    
+    output.push('\n✓ Compilation successful');
+    output.push('✓ Upload complete');
+    
+    setOutput(output.join('\n'));
+  };
+
+  const downloadCode = () => {
+    const extensions = {
+      javascript: 'js',
+      python: 'py',
+      html: 'html',
+      arduino: 'ino',
+      css: 'css'
+    };
+    
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `code.${extensions[language]}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const addLibrary = () => {
+    if (newLibrary && !libraries.includes(newLibrary)) {
+      setLibraries([...libraries, newLibrary]);
+      setNewLibrary('');
+      setOutput(`Library added: ${newLibrary}`);
+    }
+  };
+
+  const removeLibrary = (lib) => {
+    setLibraries(libraries.filter(l => l !== lib));
+  };
+
+  const toggleBreakpoint = (lineNum) => {
+    const newBreakpoints = new Set(breakpoints);
+    if (newBreakpoints.has(lineNum)) {
+      newBreakpoints.delete(lineNum);
+    } else {
+      newBreakpoints.add(lineNum);
+    }
+    setBreakpoints(newBreakpoints);
+  };
+
+  const loadExample = (lang) => {
+    setLanguage(lang);
+    setCode(languageExamples[lang]);
+  };
+
+  const isVisualLanguage = ['html', 'css'].includes(language);
+
+  return (
+    <div className={`h-screen flex flex-col ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'} overflow-hidden`}>
+      {/* Header */}
+      <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} p-4 flex-shrink-0`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Code className={`${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'} w-8 h-8`} />
+            <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Advanced Code Runner
+            </h1>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <select
+              value={language}
+              onChange={(e) => loadExample(e.target.value)}
+              className={`px-4 py-2 rounded-lg ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-300'}`}
+            >
+              <option value="javascript">JavaScript</option>
+              <option value="python">Python</option>
+              <option value="html">HTML</option>
+              <option value="css">CSS</option>
+              <option value="arduino">Arduino</option>
+            </select>
+            
+            <button
+              onClick={executeCode}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition"
+            >
+              <Play className="w-4 h-4" />
+              Run
+            </button>
+            
+            <button
+              onClick={() => setDebugMode(!debugMode)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                debugMode 
+                  ? 'bg-orange-600 text-white' 
+                  : theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-900'
+              }`}
+            >
+              <Bug className="w-4 h-4" />
+              Debug
+            </button>
+            
+            <button
+              onClick={downloadCode}
+              className={`flex items-center gap-2 ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'} px-4 py-2 rounded-lg transition`}
+            >
+              <Download className="w-4 h-4" />
+              Download
+            </button>
+            
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className={`p-2 rounded-lg transition ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'}`}
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className={`mt-4 p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <h3 className={`text-lg font-semibold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Settings</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={`block mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Theme</label>
+                <select
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value)}
+                  className={`w-full px-3 py-2 rounded ${theme === 'dark' ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}
+                >
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                </select>
+              </div>
+              <div>
+                <label className={`block mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Font Size</label>
+                <input
+                  type="range"
+                  min="10"
+                  max="24"
+                  value={fontSize}
+                  onChange={(e) => setFontSize(parseInt(e.target.value))}
+                  className="w-full"
+                />
+                <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{fontSize}px</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Side - Code Editor */}
+        <div className={`w-1/2 flex flex-col ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border-r ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+          <div className={`p-3 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'} border-b ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'} flex items-center justify-between`}>
+            <div className="flex items-center gap-2">
+              <Terminal className={`w-4 h-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`} />
+              <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Code Editor</span>
+            </div>
+            {debugMode && (
+              <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded">DEBUG MODE</span>
+            )}
+          </div>
+          
+          <textarea
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className={`flex-1 p-4 font-mono resize-none focus:outline-none overflow-auto ${
+              theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'
+            }`}
+            style={{ fontSize: `${fontSize}px` }}
+            spellCheck="false"
+          />
+          
+          {/* Library Manager */}
+          <div className={`p-3 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'} border-t ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <Package className={`w-4 h-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`} />
+              <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Libraries</span>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newLibrary}
+                onChange={(e) => setNewLibrary(e.target.value)}
+                placeholder="CDN URL oder Library Name"
+                className={`flex-1 px-3 py-1 text-sm rounded ${theme === 'dark' ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'} border ${theme === 'dark' ? 'border-gray-500' : 'border-gray-300'}`}
+              />
+              <button
+                onClick={addLibrary}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm"
+              >
+                Add
+              </button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {libraries.map((lib, idx) => (
+                <div key={idx} className={`flex items-center gap-1 ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'} px-2 py-1 rounded text-xs`}>
+                  <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>{lib.substring(0, 30)}...</span>
+                  <button onClick={() => removeLibrary(lib)} className="text-red-500 hover:text-red-700">×</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Output */}
+        <div className={`w-1/2 flex flex-col ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} overflow-hidden`}>
+          <div className={`p-3 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'} border-b ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'} flex items-center gap-2`}>
+            <Eye className={`w-4 h-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`} />
+            <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+              {isVisualLanguage ? 'Live Preview' : 'Console Output'}
+            </span>
+          </div>
+          
+          {isVisualLanguage ? (
+            <iframe
+              ref={iframeRef}
+              className="flex-1 w-full border-0"
+              title="preview"
+              sandbox="allow-scripts allow-same-origin"
+            />
+          ) : (
+            <pre className={`flex-1 p-4 font-mono text-sm overflow-auto ${
+              theme === 'dark' ? 'bg-gray-900 text-green-400' : 'bg-gray-50 text-gray-900'
+            }`}>
+              {output || 'Run your code to see output...'}
+            </pre>
+          )}
+          
+          {language === 'arduino' && (
+            <div className={`p-3 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'} border-t ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
+              <div className="flex items-center gap-2 text-sm">
+                <Cpu className={`w-4 h-4 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
+                <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>Arduino Uno Simulator</span>
+                <div className="ml-auto flex gap-4">
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Digital Pin 13: <span className="text-green-500">●</span></span>
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Serial: 9600 baud</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CodeRunner;

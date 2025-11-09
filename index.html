@@ -285,10 +285,14 @@ body {
         function executeHTML() {
             const iframe = document.getElementById('preview-frame');
             if (iframe) {
-                const doc = iframe.contentDocument;
-                doc.open();
-                doc.write(state.code);
-                doc.close();
+                try {
+                    const doc = iframe.contentDocument || iframe.contentWindow.document;
+                    doc.open();
+                    doc.write(state.code);
+                    doc.close();
+                } catch (e) {
+                    console.error('Error writing to iframe:', e);
+                }
             }
         }
 
@@ -312,10 +316,14 @@ body {
 ```
         const iframe = document.getElementById('preview-frame');
         if (iframe) {
-            const doc = iframe.contentDocument;
-            doc.open();
-            doc.write(html);
-            doc.close();
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                doc.open();
+                doc.write(html);
+                doc.close();
+            } catch (e) {
+                console.error('Error writing to iframe:', e);
+            }
         }
     }
 
@@ -378,10 +386,6 @@ body {
         state.language = lang;
         state.code = examples[lang];
         render();
-        // Auto-execute HTML and CSS for live preview
-        if (lang === 'html' || lang === 'css') {
-            setTimeout(executeCode, 100);
-        }
     }
 
     function updateOutput() {
@@ -476,7 +480,7 @@ body {
                         </div>
                         
                         ${isVisual ? 
-                            '<iframe id="preview-frame" class="flex-1 w-full border-0 bg-white" sandbox="allow-scripts"></iframe>' :
+                            '<iframe id="preview-frame" class="flex-1 w-full border-0 bg-white" sandbox="allow-scripts allow-same-origin"></iframe>' :
                             '<pre id="console-output" class="flex-1 p-4 code-editor text-sm overflow-auto bg-gray-900 text-green-400">Run your code to see output...</pre>'
                         }
                     </div>
@@ -486,11 +490,6 @@ body {
         
         document.getElementById('app').innerHTML = html;
         attachEvents();
-        
-        // Auto-render HTML/CSS when switching to those languages
-        if (isVisual) {
-            setTimeout(executeCode, 100);
-        }
     }
 
     function attachEvents() {

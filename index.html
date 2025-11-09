@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -29,59 +28,46 @@
 <body class="bg-gray-900">
     <div id="app"></div>
 
-```
-<script>
-    const state = {
-        code: `// Willkommen zum Advanced Code Runner!
-```
-
+    <script>
+        const state = {
+            code: `// Willkommen zum Advanced Code Runner!
 // Wähle eine Sprache und beginne zu programmieren
 
-console.log(“Hello World!”);`,
-language: ‘javascript’,
-output: ‘’,
-libraries: [],
-newLibrary: ‘’,
-debugMode: false,
-showSettings: false,
-theme: ‘dark’,
-fontSize: 14
-};
+console.log("Hello World!");`,
+            language: 'javascript',
+            output: '',
+            libraries: [],
+            newLibrary: '',
+            debugMode: false,
+            showSettings: false,
+            theme: 'dark',
+            fontSize: 14
+        };
 
-```
-    const examples = {
-        javascript: `// JavaScript Beispiel
-```
-
-console.log(“Hello from JavaScript!”);
+        const examples = {
+            javascript: `// JavaScript Beispiel
+console.log("Hello from JavaScript!");
 
 // Funktion definieren
 function fibonacci(n) {
-if (n <= 1) return n;
-return fibonacci(n - 1) + fibonacci(n - 2);
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
 }
 
-console.log(“Fibonacci(10):”, fibonacci(10));`,
-
-```
-        python: `# Python Beispiel
-```
-
-print(“Hello from Python!”)
+console.log("Fibonacci(10):", fibonacci(10));`,
+            
+            python: `# Python Beispiel
+print("Hello from Python!")
 
 # Funktion definieren
-
 def fibonacci(n):
-if n <= 1:
-return n
-return fibonacci(n - 1) + fibonacci(n - 2)
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
 
-print(f”Fibonacci(10): {fibonacci(10)}”)`,
-
-```
-        html: `<!DOCTYPE html>
-```
-
+print(f"Fibonacci(10): {fibonacci(10)}")`,
+            
+            html: `<!DOCTYPE html>
 <html>
 <head>
   <style>
@@ -122,7 +108,7 @@ print(f”Fibonacci(10): {fibonacci(10)}”)`,
     <p id="counter">Clicks: 0</p>
     <button onclick="incrementCounter()">Click Me!</button>
   </div>
-
+  
   <script>
     let count = 0;
     function incrementCounter() {
@@ -301,7 +287,6 @@ body {
 <html>
 <head>
 <style>${state.code}</style>
-
 </head>
 <body>
 <div class="container">
@@ -312,216 +297,213 @@ body {
 </div>
 </body>
 </html>`;
-
-```
-        const iframe = document.getElementById('preview-frame');
-        if (iframe) {
-            try {
-                const doc = iframe.contentDocument || iframe.contentWindow.document;
-                doc.open();
-                doc.write(html);
-                doc.close();
-            } catch (e) {
-                console.error('Error writing to iframe:', e);
+            
+            const iframe = document.getElementById('preview-frame');
+            if (iframe) {
+                try {
+                    const doc = iframe.contentDocument || iframe.contentWindow.document;
+                    doc.open();
+                    doc.write(html);
+                    doc.close();
+                } catch (e) {
+                    console.error('Error writing to iframe:', e);
+                }
             }
         }
-    }
 
-    function executeArduino() {
-        const output = [];
-        output.push('=== Arduino Simulator ===');
-        output.push('Board: Arduino Uno');
-        output.push('');
-        
-        const matches = state.code.match(/Serial\.println?\([^)]+\)/g);
-        if (matches) {
-            output.push('Serial Monitor:');
-            output.push('---');
-            matches.forEach(match => {
-                let content = match.match(/Serial\.println?\(([^)]+)\)/)[1];
-                content = content.replace(/["']/g, '');
-                output.push(content);
-            });
+        function executeArduino() {
+            const output = [];
+            output.push('=== Arduino Simulator ===');
+            output.push('Board: Arduino Uno');
+            output.push('');
+            
+            const matches = state.code.match(/Serial\.println?\([^)]+\)/g);
+            if (matches) {
+                output.push('Serial Monitor:');
+                output.push('---');
+                matches.forEach(match => {
+                    let content = match.match(/Serial\.println?\(([^)]+)\)/)[1];
+                    content = content.replace(/["']/g, '');
+                    output.push(content);
+                });
+            }
+            
+            output.push('');
+            output.push('✓ Compilation successful');
+            output.push('✓ Upload complete');
+            
+            state.output = output.join('\n');
         }
-        
-        output.push('');
-        output.push('✓ Compilation successful');
-        output.push('✓ Upload complete');
-        
-        state.output = output.join('\n');
-    }
 
-    function downloadCode() {
-        const extensions = {
-            javascript: 'js',
-            python: 'py',
-            html: 'html',
-            arduino: 'ino',
-            css: 'css'
-        };
-        
-        const blob = new Blob([state.code], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'code.' + extensions[state.language];
-        a.click();
-        URL.revokeObjectURL(url);
-    }
+        function downloadCode() {
+            const extensions = {
+                javascript: 'js',
+                python: 'py',
+                html: 'html',
+                arduino: 'ino',
+                css: 'css'
+            };
+            
+            const blob = new Blob([state.code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'code.' + extensions[state.language];
+            a.click();
+            URL.revokeObjectURL(url);
+        }
 
-    function addLibrary() {
-        if (state.newLibrary && !state.libraries.includes(state.newLibrary)) {
-            state.libraries.push(state.newLibrary);
-            state.newLibrary = '';
+        function addLibrary() {
+            if (state.newLibrary && !state.libraries.includes(state.newLibrary)) {
+                state.libraries.push(state.newLibrary);
+                state.newLibrary = '';
+                render();
+            }
+        }
+
+        function removeLibrary(index) {
+            state.libraries.splice(index, 1);
             render();
         }
-    }
 
-    function removeLibrary(index) {
-        state.libraries.splice(index, 1);
-        render();
-    }
-
-    function loadExample(lang) {
-        state.language = lang;
-        state.code = examples[lang];
-        render();
-    }
-
-    function updateOutput() {
-        const el = document.getElementById('console-output');
-        if (el) {
-            el.textContent = state.output || 'Run your code to see output...';
+        function loadExample(lang) {
+            state.language = lang;
+            state.code = examples[lang];
+            render();
         }
-    }
 
-    function render() {
-        const isVisual = state.language === 'html' || state.language === 'css';
-        
-        const html = `
-            <div class="h-screen flex flex-col overflow-hidden">
-                <!-- Header -->
-                <div class="bg-gray-800 border-b border-gray-700 p-4 flex-shrink-0">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                            </svg>
-                            <h1 class="text-2xl font-bold text-white">Advanced Code Runner</h1>
+        function updateOutput() {
+            const el = document.getElementById('console-output');
+            if (el) {
+                el.textContent = state.output || 'Run your code to see output...';
+            }
+        }
+
+        function render() {
+            const isVisual = state.language === 'html' || state.language === 'css';
+            
+            const html = `
+                <div class="h-screen flex flex-col overflow-hidden">
+                    <!-- Header -->
+                    <div class="bg-gray-800 border-b border-gray-700 p-4 flex-shrink-0">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                                </svg>
+                                <h1 class="text-2xl font-bold text-white">Advanced Code Runner</h1>
+                            </div>
+                            
+                            <div class="flex items-center gap-3">
+                                <select id="lang-select" class="px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600">
+                                    <option value="javascript" ${state.language === 'javascript' ? 'selected' : ''}>JavaScript</option>
+                                    <option value="python" ${state.language === 'python' ? 'selected' : ''}>Python</option>
+                                    <option value="html" ${state.language === 'html' ? 'selected' : ''}>HTML</option>
+                                    <option value="css" ${state.language === 'css' ? 'selected' : ''}>CSS</option>
+                                    <option value="arduino" ${state.language === 'arduino' ? 'selected' : ''}>Arduino</option>
+                                </select>
+                                
+                                <button id="run-btn" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                    Run
+                                </button>
+                                
+                                <button id="debug-btn" class="flex items-center gap-2 px-4 py-2 rounded-lg transition ${state.debugMode ? 'bg-orange-600 text-white' : 'bg-gray-700 text-white'}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Debug
+                                </button>
+                                
+                                <button id="download-btn" class="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    </svg>
+                                    Download
+                                </button>
+                            </div>
                         </div>
-                        
-                        <div class="flex items-center gap-3">
-                            <select id="lang-select" class="px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600">
-                                <option value="javascript" ${state.language === 'javascript' ? 'selected' : ''}>JavaScript</option>
-                                <option value="python" ${state.language === 'python' ? 'selected' : ''}>Python</option>
-                                <option value="html" ${state.language === 'html' ? 'selected' : ''}>HTML</option>
-                                <option value="css" ${state.language === 'css' ? 'selected' : ''}>CSS</option>
-                                <option value="arduino" ${state.language === 'arduino' ? 'selected' : ''}>Arduino</option>
-                            </select>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="flex flex-1 overflow-hidden">
+                        <!-- Left Side -->
+                        <div class="w-1/2 flex flex-col bg-gray-800 border-r border-gray-700">
+                            <div class="p-3 bg-gray-700 border-b border-gray-600 flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-300">Code Editor</span>
+                                ${state.debugMode ? '<span class="text-xs bg-orange-500 text-white px-2 py-1 rounded">DEBUG</span>' : ''}
+                            </div>
                             
-                            <button id="run-btn" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M8 5v14l11-7z"/>
-                                </svg>
-                                Run
-                            </button>
+                            <textarea id="code-input" class="flex-1 p-4 code-editor resize-none bg-gray-900 text-gray-100 overflow-auto" style="font-size: ${state.fontSize}px" spellcheck="false">${state.code}</textarea>
                             
-                            <button id="debug-btn" class="flex items-center gap-2 px-4 py-2 rounded-lg transition ${state.debugMode ? 'bg-orange-600 text-white' : 'bg-gray-700 text-white'}">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                Debug
-                            </button>
+                            <div class="p-3 bg-gray-700 border-t border-gray-600">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="text-sm font-medium text-gray-300">Libraries</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <input id="lib-input" type="text" placeholder="CDN URL" class="flex-1 px-3 py-1 text-sm rounded bg-gray-600 text-white border border-gray-500"/>
+                                    <button id="add-lib-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm">Add</button>
+                                </div>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    ${state.libraries.map((lib, i) => `
+                                        <div class="flex items-center gap-1 bg-gray-600 px-2 py-1 rounded text-xs">
+                                            <span class="text-gray-300">${lib.substring(0, 30)}...</span>
+                                            <button onclick="removeLibrary(${i})" class="text-red-500 hover:text-red-700 ml-1">×</button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Side -->
+                        <div class="w-1/2 flex flex-col bg-gray-800 overflow-hidden">
+                            <div class="p-3 bg-gray-700 border-b border-gray-600">
+                                <span class="text-sm font-medium text-gray-300">${isVisual ? 'Live Preview' : 'Console Output'}</span>
+                            </div>
                             
-                            <button id="download-btn" class="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                </svg>
-                                Download
-                            </button>
+                            ${isVisual ? 
+                                '<iframe id="preview-frame" class="flex-1 w-full border-0 bg-white" sandbox="allow-scripts allow-same-origin"></iframe>' :
+                                '<pre id="console-output" class="flex-1 p-4 code-editor text-sm overflow-auto bg-gray-900 text-green-400">Run your code to see output...</pre>'
+                            }
                         </div>
                     </div>
                 </div>
+            `;
+            
+            document.getElementById('app').innerHTML = html;
+            attachEvents();
+        }
 
-                <!-- Main Content -->
-                <div class="flex flex-1 overflow-hidden">
-                    <!-- Left Side -->
-                    <div class="w-1/2 flex flex-col bg-gray-800 border-r border-gray-700">
-                        <div class="p-3 bg-gray-700 border-b border-gray-600 flex items-center justify-between">
-                            <span class="text-sm font-medium text-gray-300">Code Editor</span>
-                            ${state.debugMode ? '<span class="text-xs bg-orange-500 text-white px-2 py-1 rounded">DEBUG</span>' : ''}
-                        </div>
-                        
-                        <textarea id="code-input" class="flex-1 p-4 code-editor resize-none bg-gray-900 text-gray-100 overflow-auto" style="font-size: ${state.fontSize}px" spellcheck="false">${state.code}</textarea>
-                        
-                        <div class="p-3 bg-gray-700 border-t border-gray-600">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="text-sm font-medium text-gray-300">Libraries</span>
-                            </div>
-                            <div class="flex gap-2">
-                                <input id="lib-input" type="text" placeholder="CDN URL" class="flex-1 px-3 py-1 text-sm rounded bg-gray-600 text-white border border-gray-500"/>
-                                <button id="add-lib-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm">Add</button>
-                            </div>
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                ${state.libraries.map((lib, i) => `
-                                    <div class="flex items-center gap-1 bg-gray-600 px-2 py-1 rounded text-xs">
-                                        <span class="text-gray-300">${lib.substring(0, 30)}...</span>
-                                        <button onclick="removeLibrary(${i})" class="text-red-500 hover:text-red-700 ml-1">×</button>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right Side -->
-                    <div class="w-1/2 flex flex-col bg-gray-800 overflow-hidden">
-                        <div class="p-3 bg-gray-700 border-b border-gray-600">
-                            <span class="text-sm font-medium text-gray-300">${isVisual ? 'Live Preview' : 'Console Output'}</span>
-                        </div>
-                        
-                        ${isVisual ? 
-                            '<iframe id="preview-frame" class="flex-1 w-full border-0 bg-white" sandbox="allow-scripts allow-same-origin"></iframe>' :
-                            '<pre id="console-output" class="flex-1 p-4 code-editor text-sm overflow-auto bg-gray-900 text-green-400">Run your code to see output...</pre>'
-                        }
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.getElementById('app').innerHTML = html;
-        attachEvents();
-    }
-
-    function attachEvents() {
-        document.getElementById('run-btn').onclick = executeCode;
-        document.getElementById('download-btn').onclick = downloadCode;
-        document.getElementById('debug-btn').onclick = function() {
-            state.debugMode = !state.debugMode;
-            render();
-        };
-        document.getElementById('lang-select').onchange = function(e) {
-            loadExample(e.target.value);
-        };
-        document.getElementById('code-input').oninput = function(e) {
-            state.code = e.target.value;
-        };
-        document.getElementById('add-lib-btn').onclick = function() {
-            state.newLibrary = document.getElementById('lib-input').value;
-            addLibrary();
-        };
-        document.getElementById('lib-input').onkeypress = function(e) {
-            if (e.key === 'Enter') {
-                state.newLibrary = e.target.value;
+        function attachEvents() {
+            document.getElementById('run-btn').onclick = executeCode;
+            document.getElementById('download-btn').onclick = downloadCode;
+            document.getElementById('debug-btn').onclick = function() {
+                state.debugMode = !state.debugMode;
+                render();
+            };
+            document.getElementById('lang-select').onchange = function(e) {
+                loadExample(e.target.value);
+            };
+            document.getElementById('code-input').oninput = function(e) {
+                state.code = e.target.value;
+            };
+            document.getElementById('add-lib-btn').onclick = function() {
+                state.newLibrary = document.getElementById('lib-input').value;
                 addLibrary();
-            }
+            };
+            document.getElementById('lib-input').onkeypress = function(e) {
+                if (e.key === 'Enter') {
+                    state.newLibrary = e.target.value;
+                    addLibrary();
+                }
+            };
+        }
+
+        window.onload = function() {
+            render();
         };
-    }
-
-    window.onload = function() {
-        render();
-    };
-</script>
-```
-
+    </script>
 </body>
 </html>
